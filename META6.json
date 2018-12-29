@@ -1,0 +1,14 @@
+{
+    "license": "Write me!",
+    "source-url": "Write me!",
+    "auth": "Write me!",
+    "depends": [],
+    "provides": {"ASN::Grammar": "lib/ASN/Grammar.pm6"},
+    "name": "ASNGrammar",
+    "description": "Write me!",
+    "resources": [],
+    "perl": "6.*",
+    "test-depends": [],
+    "build-depends": [],
+    "version": "0.1"
+}
