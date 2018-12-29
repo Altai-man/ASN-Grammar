@@ -1,6 +1,6 @@
 my grammar ASN::Grammar {
     token TOP { <module> }
-    token module { \n* <module-id> \n* 'DEFINITIONS' \s+ <default-tag>? \s+ '::=' \s+ 'BEGIN' \n+ <body>? \n* 'END' \n* }
+    rule module { \n* <module-id> \n* 'DEFINITIONS' <default-tag>? '::=' 'BEGIN' \n* <body>? \n* 'END' \n* }
     rule default-tag { <explicit-or-implicit-tag> 'TAGS'}
     token module-id { <id-string> }
 
@@ -8,7 +8,7 @@ my grammar ASN::Grammar {
 
     token assignment { <type-assignment> ';'? || <value-assignment> ';'? }
 
-    token value-assignment { <id-string> \s* <type> \s* '::=' \s* <value> \n }
+    rule value-assignment { <id-string> <type> '::=' <value>\n* }
 
     rule type-assignment { <id-string> '::=' <type> }
     token type { <builtin-type> || <defined-type> }
@@ -70,14 +70,14 @@ my grammar ASN::Grammar {
     rule string-type { 'OCTET' 'STRING' }
     rule bit-string-type { 'BIT' 'STRING' }
     token bits-type { 'BITS' }
-    token sequence-type { 'SEQUENCE' \s+ '{' \n*? <element-type-list> \s* \n*? '}' }
-    token sequence-of-type { 'SEQUENCE' \s+ 'OF' \s+ <type> }
-    token set-type { 'SET' \s+ '{' \s+ <element-type-list> \s+ '}' }
-    token set-of-type { 'SET' \s+ 'OF' \s+ <type> }
-    token choice-type { 'CHOICE' \s+ '{' <element-type-list> \s* '}' }
-    token enumerated-type { 'ENUMERATED' \s* <named-number-list> }
+    rule sequence-type { 'SEQUENCE' '{' <element-type-list> '}'}
+    rule sequence-of-type { 'SEQUENCE' 'OF' <type> }
+    rule set-type { 'SET' '{' <element-type-list> '}'}
+    rule set-of-type { 'SET' 'OF' <type> }
+    rule choice-type { 'CHOICE' '{' <element-type-list> '}' }
+    rule enumerated-type { 'ENUMERATED' <named-number-list> }
     token selection-type { <id-string> '<' <type> }
-    token tagged-type { <tag> \s* <explicit-or-implicit-tag>? \s* <type> }
+    rule tagged-type { <tag> <explicit-or-implicit-tag>? <type>}
     rule any-type { 'ANY' || 'ANY' 'DEFINED' 'BY' <id-string> }
 
     rule tag { '[' <class>? \d+ ']'}
@@ -86,8 +86,8 @@ my grammar ASN::Grammar {
 
     token element-type-list { <element-type>+ % ",\n" }
 
-    token element-type { <(\s* <id-string> \s*)>? <type> \s* <optional-or-default>? }
-    token optional-or-default { 'OPTIONAL' || 'DEFAULT' \s*? <id-string>? \s*? <value> }
+    rule element-type { <?> <id-string>? <type> <optional-or-default>? }
+    rule optional-or-default { 'OPTIONAL' || 'DEFAULT' <id-string>? <value> }
 
     token id-string { <[A..Z a..z]> <[A..Z a..z 0..9 \- _ ]>* }
     token comment { '--' .+? \n+ }
