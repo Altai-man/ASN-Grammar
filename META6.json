@@ -1,14 +1,13 @@
 {
-    "license": "Write me!",
-    "source-url": "Write me!",
-    "auth": "Write me!",
+    "license": "Artistic-2.0",
+    "source-url": "",
     "depends": [],
+    "auth": "github:Altai-man",
     "provides": {"ASN::Grammar": "lib/ASN/Grammar.pm6"},
-    "name": "ASNGrammar",
-    "description": "Write me!",
+    "name": "ASN::Grammar",
+    "description": "A grammar to parse subset of ASN.1",
     "resources": [],
-    "perl": "6.*",
-    "test-depends": [],
-    "build-depends": [],
-    "version": "0.1"
+    "perl": "6.c",
+    "version": "0.1",
+    "authors": []
 }
