@@ -365,6 +365,21 @@ ExtendedResponse ::= [APPLICATION 24] SEQUENCE {
 END
 LDAPEND
 
-isnt parse-ASN($ldap-asn), Nil;
+my $ldap = parse-ASN($ldap-asn);
+say $ldap;
+isa-ok $ldap, ASN::Module, 'LDAP spec is parsed';
+
+is 'Lightweight-Directory-Access-Protocol-V3', $ldap.name, 'Name is parsed';
+is 'IMPLICIT', $ldap.schema, 'Schema is parsed';
+
+is $ldap.types.elems, 48, 'All types are parsed';
+
+my $values = $ldap.types.grep(* ~~ ASN::ValueAssignment);
+is $values.elems, 1, 'One value is parsed';
+is $values[0].name, 'maxInt', 'Value type name is parsed';
+is $values[0].type, 'INTEGER', 'Value type type is parsed';
+is $values[0].value, 2147483647, 'Value type value is parsed';
+
+
 
 done-testing;
