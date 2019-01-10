@@ -10,19 +10,25 @@ grammar ASN::Grammar {
 
     # Type part
     rule type-assignment { <id-string> '::=' <type> }
-    token type { <builtin-type> || <id-string> }
-    token builtin-type {
-        || <null-type> || <boolean-type> || <real-type>
-        || <integer-type> || <object-id-type> || <string-type>
-        || <bit-string-type> || <bits-type> || <sequence-type>
-        || <sequence-of-type> || <set-type> || <set-of-type>
-        || <choice-type> || <enumerated-type> || <tagged-type> || <any-type>
-    }
+    token type { <builtin> || <id-string> }
+    proto token builtin {*}
 
-    token null-type { 'NULL' }
-    token boolean-type { 'BOOLEAN' }
-    token real-type { 'REAL' }
-    rule integer-type { 'INTEGER' [ <named-number-list> || <constraint-list> ]? }
+    token builtin:sym<null> { 'NULL' }
+    token builtin:sym<boolean> { 'BOOLEAN' }
+    token builtin:sym<real> { 'REAL' }
+    rule builtin:sym<integer> { 'INTEGER' [ <named-number-list> || <constraint-list> ]? }
+    rule builtin:sym<object-id> { 'OBJECT' 'IDENTIFIER' }
+    rule builtin:sym<string> { 'OCTET' 'STRING' }
+    rule builtin:sym<bit-string> { 'BIT' 'STRING' }
+    token builtin:sym<bits> { 'BITS' }
+    rule builtin:sym<sequence> { 'SEQUENCE' '{' <element-type-list> '}'}
+    rule builtin:sym<sequence-of> { 'SEQUENCE' 'OF' <type> }
+    rule builtin:sym<set> { 'SET' '{' <element-type-list> '}' }
+    rule builtin:sym<set-of> { 'SET' 'OF' <type> }
+    rule builtin:sym<choice> { 'CHOICE' '{' <element-type-list> '}' }
+    rule builtin:sym<enumerated> { 'ENUMERATED' <named-number-list> }
+    rule builtin:sym<any> { 'ANY' }
+    rule builtin:sym<tagged> { <tag> <explicit-or-implicit-tag>? <type>}
 
     token named-number-list { '{' \n* <named-number>+ % ",\n" \s* '}' }
     rule named-number { \s* <id-string> '(' <number> ')'}
@@ -32,20 +38,7 @@ grammar ASN::Grammar {
     token lower-end-point { <value> || 'MIN' }
     token upper-end-point { <value> || 'MAX' }
     rule value-range { '<'? '..' '<'? <upper-end-point> }
-
-    rule object-id-type { 'OBJECT' 'IDENTIFIER' }
-    rule string-type { 'OCTET' 'STRING' }
-    rule bit-string-type { 'BIT' 'STRING' }
-    token bits-type { 'BITS' }
-    rule sequence-type { 'SEQUENCE' '{' <element-type-list> '}'}
-    rule sequence-of-type { 'SEQUENCE' 'OF' <type> }
-    rule set-type { 'SET' '{' <element-type-list> '}' }
-    rule set-of-type { 'SET' 'OF' <type> }
-    rule choice-type { 'CHOICE' '{' <element-type-list> '}' }
-    rule enumerated-type { 'ENUMERATED' <named-number-list> }
-    rule any-type { 'ANY' }
-    rule tagged-type { <tag> <explicit-or-implicit-tag>? <type>}
-    rule tag { '[' <class>? \d+ ']'}
+    rule tag { '[' <class>? (\d+) ']'}
     token class { 'UNIVERSAL' || 'APPLICATION' || 'PRIVATE' }
 
     token element-type-list { <element-type>+ % ",\n" }
@@ -80,12 +73,25 @@ class ASN::Module {
 
 class ASN::TypeAssignment {
     has $.name;
+    has $.type;
 }
 
 class ASN::ValueAssignment {
     has $.name;
     has $.type;
     has $.value;
+}
+
+class ASN::RawType {
+    has $.name;
+    has $.type;
+    has %.params;
+}
+
+class ASN::Tag {
+    subset TagClass of Str where 'APPLICATION'|'PRIVATE'|'CONTEXT-SPECIFIC'|'UNIVERSAL';
+    has TagClass $.class;
+    has Int $.value;
 }
 
 class ASN::Result {
@@ -108,11 +114,74 @@ class ASN::Result {
     }
 
     method type-assignment($/) {
-        make ASN::TypeAssignment.new(name => ~$<id-string>);
+        make ASN::TypeAssignment.new(name => ~$<id-string>, type => $<type>.made);
+    }
+
+    method type($/) {
+        make $_.made with $<builtin>;
+        make ASN::RawType.new(:name(~$_), :type(~$_)) with $<id-string>;
+    }
+
+    method builtin:sym<null>($/) { make ASN::RawType.new(:type('NULL')) }
+    method builtin:sym<boolean>($/) { make ASN::RawType.new(:type('BOOLEAN')) }
+    method builtin:sym<real>($/) { make ASN::RawType.new(:type('REAL')) }
+    method builtin:sym<integer>($/) { make ASN::RawType.new(:type('INTEGER')) }
+    method builtin:sym<object-id>($/) { make ASN::RawType.new(:type('OBJECT IDENTIFIER')) }
+    method builtin:sym<string>($/) { make ASN::RawType.new(:type('OCTET STRING')) }
+    method builtin:sym<bit-string>($/) { make ASN::RawType.new(:type('BIT STRING')) }
+    method builtin:sym<bits>($/) { make ASN::RawType.new(:type('BITG')) }
+    method builtin:sym<sequence>($/) {
+        my $fields = $<element-type-list>.made;
+        make ASN::RawType.new(:type('SEQUENCE'), params => { :$fields });
+    }
+    method builtin:sym<sequence-of>($/) { make ASN::RawType.new(:type('SEQUENCE OF'), params => {:of($<type>.made)}) }
+    method builtin:sym<set>($/) { make ASN::RawType.new(:type('SET')) }
+    method builtin:sym<set-of>($/) { make ASN::RawType.new(:type('SET OF')) }
+    method builtin:sym<choice>($/) {
+        my $choice = $<element-type-list>.made.List;
+        my %choices;
+        for @$choice -> $item {
+            with $item.params<tag> {
+                %choices{$item.name} = ($_ => $item.type);
+            } else {
+                %choices{$item.name} = $item.type;
+            }
+        }
+        make ASN::RawType.new(:type('CHOICE'), params => { :%choices })
+    }
+    method builtin:sym<enumerated>($/) {
+        make ASN::RawType.new(:type('ENUMERATED'), params => { defs => $<named-number-list>.made })
+    }
+    method builtin:sym<tagged>($/) {
+        my $inner = $<type>.made;
+        $inner.params<tag> = $<tag>.made;
+        make $inner;
+    }
+
+    method named-number-list($/) { make $<named-number>>>.made.Hash }
+    method named-number($/) { make $<id-string>.Str => $<number>.Str.Int }
+
+    method element-type-list($/) { make $<element-type>>>.made.List }
+    method element-type($/) {
+        my $inner = $<type>.made;
+        my %params = $inner.params;
+        with $<optional-or-default> {
+            with $_<value> {
+                %params<default> = ~$_;
+            } else {
+                %params<optional> = True;
+            }
+        }
+        make ASN::RawType.new(:name(~$<id-string>), type => $inner.type, :%params);
+    }
+
+    method tag($/) {
+        my $class = $<class> // 'CONTEXT-SPECIFIC';
+        make ASN::Tag.new(class => $class.Str.uc, value => $0.Str.Int)
     }
 
     method value-assignment($/) {
-        make ASN::ValueAssignment.new(name => ~$<id-string>, type => ~$<type>, value => $<value>.made);
+        make ASN::ValueAssignment.new(name => ~$<id-string>, type => ~$<type>.trim, value => $<value>.made);
     }
     method value:sym<defined>($/) { make ~$/ }
     method value:sym<null>($/) { make 'NULL' }
