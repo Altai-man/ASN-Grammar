@@ -1,6 +1,6 @@
 {
     "license": "Artistic-2.0",
-    "source-url": "",
+    "source-url": "https://github.com/Altai-man/ASN-Grammar.git",
     "depends": [],
     "auth": "github:Altai-man",
     "provides": {"ASN::Grammar": "lib/ASN/Grammar.pm6"},
@@ -9,5 +9,5 @@
     "resources": [],
     "perl": "6.c",
     "version": "0.1",
-    "authors": []
+    "authors": ["Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"]
 }
