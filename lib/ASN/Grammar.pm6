@@ -48,7 +48,6 @@ grammar ASN::Grammar {
     # Value part
     rule value-assignment { <id-string> <type> '::=' <value>\n* }
     proto token value {*}
-    token value:sym<defined> { <id-string> }
     token value:sym<null> { 'NULL' }
     token value:sym<bool> { 'TRUE' || 'FALSE' }
     token value:sym<special-real> { 'PLUS-INFINITY' || 'MINUS-INFINITY' }
@@ -57,6 +56,7 @@ grammar ASN::Grammar {
     token value:sym<hex> {  "'" <xdigit>* "'" <[hH]> }
     token value:sym<string> { '"' ( <-["]> | '""' )* '"' }
     token value:sym<bit> { '{' <name-value-component>* '}' }
+    token value:sym<defined> { <id-string> }
     token name-value-component { ','? <name-or-number> }
     token name-or-number { \d+ || <id-string> || <name-and-number> }
     rule name-and-number { <id-string> '(' \d+ ')' || <id-string> '(' <id-string> ')' }
@@ -167,7 +167,7 @@ class ASN::Result {
         my %params = $inner.params;
         with $<optional-or-default> {
             with $_<value> {
-                %params<default> = ~$_;
+                %params<default> = $_.made;
             } else {
                 %params<optional> = True;
             }
@@ -183,9 +183,18 @@ class ASN::Result {
     method value-assignment($/) {
         make ASN::ValueAssignment.new(name => ~$<id-string>, type => ~$<type>.trim, value => $<value>.made);
     }
-    method value:sym<defined>($/) { make ~$/ }
+    method value:sym<defined>($/) {
+        # FIXME This is a hack, as this rule somehow overrides `bool` rule
+        if $/.Str eq 'TRUE' {
+            make True;
+        } elsif $/.Str eq 'FALSE' {
+            make False;
+        } else {
+            make ~$/;
+        }
+    }
     method value:sym<null>($/) { make 'NULL' }
-    method value:sym<bool>($/) { make ~$/ }
+    method value:sym<bool>($/) { make ($/.Str eq 'FALSE' ?? False !! True) }
     method value:sym<number>($/) { make $/.Int }
 }
 
