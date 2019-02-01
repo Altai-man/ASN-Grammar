@@ -196,6 +196,7 @@ class ASN::Result {
     method value:sym<null>($/) { make 'NULL' }
     method value:sym<bool>($/) { make ($/.Str eq 'FALSE' ?? False !! True) }
     method value:sym<number>($/) { make $/.Int }
+    method value:sym<string>($/) { make ~$/ }
 }
 
 our sub parse-ASN(Str $source) is export {
