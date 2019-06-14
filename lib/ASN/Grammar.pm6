@@ -6,17 +6,17 @@ grammar ASN::Grammar {
     token TOP { <module>+ }
     rule module { \n* <id-string> \n* 'DEFINITIONS' <default-tag> '::=' 'BEGIN' \n* <body>? \n* 'END' \n* }
     rule default-tag { <( <explicit-or-implicit-tag> )> 'TAGS' }
-    token body { [ <type-assignment> || <value-assignment> ]+ }
+    token body { [ <type-assignment> | <value-assignment> ]+ }
 
     # Type part
     rule type-assignment { <id-string> '::=' <type> }
-    token type { <builtin> || <id-string> }
+    token type { <builtin> | <id-string> }
     proto token builtin {*}
 
     token builtin:sym<null> { 'NULL' }
     token builtin:sym<boolean> { 'BOOLEAN' }
     token builtin:sym<real> { 'REAL' }
-    rule builtin:sym<integer> { 'INTEGER' [ <named-number-list> || <constraint-list> ]? }
+    rule builtin:sym<integer> { 'INTEGER' [ <named-number-list> | <constraint-list> ]? }
     rule builtin:sym<object-id> { 'OBJECT' 'IDENTIFIER' }
     rule builtin:sym<string> { 'OCTET' 'STRING' }
     rule builtin:sym<bit-string> { 'BIT' 'STRING' }
@@ -32,25 +32,25 @@ grammar ASN::Grammar {
 
     token named-number-list { '{' \n* <named-number>+ % ",\n" \s* '}' }
     rule named-number { \s* <id-string> '(' <number> ')'}
-    token number { <value:sym<number>> || <binary-value> || <hex-value> || <id-string> }
+    token number { <value:sym<number>> | <binary-value> | <hex-value> | <id-string> }
 
     rule constraint-list { '(' <lower-end-point> <value-range>? ')' }
-    token lower-end-point { <value> || 'MIN' }
-    token upper-end-point { <value> || 'MAX' }
+    token lower-end-point { <value> | 'MIN' }
+    token upper-end-point { <value> | 'MAX' }
     rule value-range { '<'? '..' '<'? <upper-end-point> }
     rule tag { '[' <class>? (\d+) ']'}
-    token class { 'UNIVERSAL' || 'APPLICATION' || 'PRIVATE' }
+    token class { 'UNIVERSAL' | 'APPLICATION' | 'PRIVATE' }
 
     token element-type-list { <element-type>+ % ",\n" }
     rule element-type { <?> <id-string>? <type> <optional-or-default>? }
-    rule optional-or-default { 'OPTIONAL' || 'DEFAULT' <id-string>? <value> }
+    rule optional-or-default { 'OPTIONAL' | 'DEFAULT' <id-string>? <value> }
 
     # Value part
     rule value-assignment { <id-string> <type> '::=' <value>\n* }
     proto token value {*}
     token value:sym<null> { 'NULL' }
-    token value:sym<bool> { 'TRUE' || 'FALSE' }
-    token value:sym<special-real> { 'PLUS-INFINITY' || 'MINUS-INFINITY' }
+    token value:sym<bool> { 'TRUE' | 'FALSE' }
+    token value:sym<special-real> { 'PLUS-INFINITY' | 'MINUS-INFINITY' }
     token value:sym<number> { '-'? \d+ }
     token value:sym<binary> { "'" <[01]>* "'" <[bB]> }
     token value:sym<hex> {  "'" <xdigit>* "'" <[hH]> }
@@ -58,10 +58,10 @@ grammar ASN::Grammar {
     token value:sym<bit> { '{' <name-value-component>* '}' }
     token value:sym<defined> { <id-string> }
     token name-value-component { ','? <name-or-number> }
-    token name-or-number { \d+ || <id-string> || <name-and-number> }
-    rule name-and-number { <id-string> '(' \d+ ')' || <id-string> '(' <id-string> ')' }
+    token name-or-number { \d+ | <id-string> | <name-and-number> }
+    rule name-and-number { <id-string> '(' \d+ ')' | <id-string> '(' <id-string> ')' }
 
-    token explicit-or-implicit-tag { 'EXPLICIT' || 'IMPLICIT' }
+    token explicit-or-implicit-tag { 'EXPLICIT' | 'IMPLICIT' }
     token id-string { <[A..Z a..z]> <[A..Z a..z 0..9 \- _ ]>* }
 }
 
@@ -183,18 +183,9 @@ class ASN::Result {
     method value-assignment($/) {
         make ASN::ValueAssignment.new(name => ~$<id-string>, type => ~$<type>.trim, value => $<value>.made);
     }
-    method value:sym<defined>($/) {
-        # FIXME This is a hack, as this rule somehow overrides `bool` rule
-        if $/.Str eq 'TRUE' {
-            make True;
-        } elsif $/.Str eq 'FALSE' {
-            make False;
-        } else {
-            make ~$/;
-        }
-    }
+    method value:sym<defined>($/) { make ~$/ }
     method value:sym<null>($/) { make 'NULL' }
-    method value:sym<bool>($/) { make ($/.Str eq 'FALSE' ?? False !! True) }
+    method value:sym<bool>($/) { make $/.Str eq 'TRUE' }
     method value:sym<number>($/) { make $/.Int }
     method value:sym<string>($/) { make ~$/ }
 }
