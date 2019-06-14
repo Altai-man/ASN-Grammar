@@ -1,13 +1,17 @@
 {
-    "license": "Artistic-2.0",
-    "source-url": "https://github.com/Altai-man/ASN-Grammar.git",
-    "depends": [],
-    "auth": "github:Altai-man",
-    "provides": {"ASN::Grammar": "lib/ASN/Grammar.pm6"},
-    "name": "ASN::Grammar",
-    "description": "A grammar to parse subset of ASN.1",
-    "resources": [],
-    "perl": "6.c",
-    "version": "0.3",
-    "authors": ["Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"]
+  "name": "ASN::Grammar",
+  "description": "A grammar to parse subset of ASN.1",
+  "version": "0.3.5",
+  "perl": "6.c",
+  "authors": [
+    "Alexander Kiryuhin <alexander.kiryuhin@gmail.com>"
+  ],
+  "auth": "github:Altai-man",
+  "depends": [],
+  "provides": {
+    "ASN::Grammar": "lib/ASN/Grammar.pm6"
+  },
+  "resources": [],
+  "license": "Artistic-2.0",
+  "source-url": "https://github.com/Altai-man/ASN-Grammar.git"
 }
