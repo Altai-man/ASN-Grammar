@@ -42,8 +42,8 @@ grammar ASN::Grammar {
     token class { 'UNIVERSAL' | 'APPLICATION' | 'PRIVATE' }
 
     token element-type-list { <element-type>+ % ",\n" }
-    rule element-type { <?> <id-string>? <type> <optional-or-default>? }
-    rule optional-or-default { 'OPTIONAL' | 'DEFAULT' <id-string>? <value> }
+    rule element-type { <?> <id-string>?! <type> <optional-or-default>? }
+    rule optional-or-default { 'OPTIONAL' | 'DEFAULT' <id-string>?! <value> }
 
     # Value part
     rule value-assignment { <id-string> <type> '::=' <value>\n* }
